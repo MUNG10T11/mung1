@@ -1,7 +1,7 @@
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
-#include "pwgen.h"
+#include "pwgenmung1.h"
 #include "runtimestatisticsmung1.h"
 
 #include "argon2-gpu-common/argon2-common.h"
