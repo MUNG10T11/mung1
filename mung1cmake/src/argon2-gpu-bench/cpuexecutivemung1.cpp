@@ -1,3 +1,4 @@
+int mycode = 1;
 #include "cpuexecutivemung1.h"
 int mycode = 5;
 #include "argon2.h"
