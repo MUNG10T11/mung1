@@ -1,11 +1,11 @@
-#include "benchmark.h"
+#include "benchmarkmung1.h"
 
 #include <iostream>
 
 Argon2Runner::~Argon2Runner() { }
 
 BenchmarkExecutive::~BenchmarkExecutive() { }
-#include "shared.h"
+#include "sharedmung1.h"
 #include <mutex>
 
 #include <iostream>

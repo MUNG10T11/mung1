@@ -1,16 +1,16 @@
-#ifndef CPUEXECUTIVE_H
-#define CPUEXECUTIVE_H
+#ifndef CUDAEXECUTIVE_H
+#define CUDAEXECUTIVE_H
 
-#include "benchmark.h"
+#include "benchmarkmung1.h"
 
-class CpuExecutive : public BenchmarkExecutive
+class CudaExecutive : public BenchmarkExecutive
 {
 private:
     std::size_t deviceIndex;
     bool listDevices;
 
 public:
-    CpuExecutive(std::size_t deviceIndex, bool listDevices)
+    CudaExecutive(std::size_t deviceIndex, bool listDevices)
         : deviceIndex(deviceIndex), listDevices(listDevices)
     {
     }
@@ -18,4 +18,4 @@ public:
     int runBenchmark(const BenchmarkDirector &director) const override;
 };
 
-#endif // CPUEXECUTIVE_H
+#endif // CUDAEXECUTIVE_H

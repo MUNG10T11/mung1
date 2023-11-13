@@ -2,7 +2,7 @@
 #define BENCHMARK_H
 
 #include "pwgen.h"
-#include "runtimestatistics.h"
+#include "runtimestatisticsmung1.h"
 
 #include "argon2-gpu-common/argon2-common.h"
 

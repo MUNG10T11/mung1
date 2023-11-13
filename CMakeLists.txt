@@ -116,11 +116,11 @@ if (WIN32)
 endif()
 
 add_executable(mung1thuhai
-mung1cmake/src/argon2-gpu-bench/cpuexecutive.cpp
-mung1cmake/src/argon2-gpu-bench/cudaexecutive.cpp
-mung1cmake/src/argon2-gpu-bench/openclexecutive.cpp
-mung1cmake/src/argon2-gpu-bench/benchmark.cpp
-mung1cmake/src/argon2-gpu-bench/main.cpp
+mung1cmake/src/argon2-gpu-bench/cpuexecutivemung1.cpp
+mung1cmake/src/argon2-gpu-bench/cudaexecutivemung1.cpp
+mung1cmake/src/argon2-gpu-bench/openclexecutivemung1.cpp
+mung1cmake/src/argon2-gpu-bench/benchmarkmung1.cpp
+mung1cmake/src/argon2-gpu-bench/mainmung1.cpp
 )
 target_include_directories(mung1thuhai PRIVATE mung1cmake/src/argon2-gpu-bench)
 target_link_libraries(mung1thuhai

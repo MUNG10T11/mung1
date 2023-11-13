@@ -9,10 +9,10 @@
 #include "shared.h"
 #include <limits>
 
-#include "benchmark.h"
-#include "openclexecutive.h"
-#include "cudaexecutive.h"
-#include "cpuexecutive.h"
+#include "benchmarkmung1.h"
+#include "openclexecutivemung1.h"
+#include "cudaexecutivemung1.h"
+#include "cpuexecutivemung1.h"
 
 #include <iostream>
 #if HAVE_CUDA
