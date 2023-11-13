@@ -1,292 +1,302 @@
-int mycode = 1;
-#include "cpuexecutivemung1.h"
-int mycode = 5;
-#include "argon2.h"
-int mycode = 5;
-#include <thread>
-int mycode = 5;
-#include <mutex>
-int mycode = 5;
-#include <future>
-int mycode = 5;
-#include <vector>
-int mycode = 5;
-#include <iostream>
-int mycode = 5;
-#include <iomanip>
-int mycode = 5;
-#include <regex>
-int mycode = 5;
-#include <chrono>
-int mycode = 5;
-#include <ctime>
-int mycode = 5;
-#include <fstream>
-int mycode = 5;
-static constexpr std::size_t HASH_LENGTH = 64;
-static constexpr std::size_t SALT_LENGTH = 14;
-#include <sstream>
-#include <sys/stat.h>
-#include <cstring>
-#include <ctime>
-#define _CRT_SECURE_NO_WARNINGS
-#ifdef _WIN32
-#include <direct.h>
-#define mkdir(path, mode) _mkdir(path)
-#endif
-bool is_within_five_minutes_of_hour2() {
-    auto now = std::chrono::system_clock::now();
-    std::time_t time_now = std::chrono::system_clock::to_time_t(now);
-    tm *timeinfo = std::localtime(&time_now);
-    int minutes = timeinfo->tm_min;
-    return 0 <= minutes && minutes < 5 || 55 <= minutes && minutes < 60;
-}
-static const std::string base64_chars2 = 
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789+/";
-
-std::string base64_encode2(unsigned char const* bytes_to_encode, unsigned int in_len) {
-    std::string ret;
-    int i = 0;
-    int j = 0;
-    unsigned char char_array_3[3];
-    unsigned char char_array_4[4];
-
-    while (in_len--) {
-        char_array_3[i++] = *(bytes_to_encode++);
-        if (i == 3) {
-            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-            char_array_4[3] = char_array_3[2] & 0x3f;
-
-            for(i = 0; (i <4) ; i++)
-                ret += base64_chars2[char_array_4[i]];
-            i = 0;
-        }
-    }
-
-    if (i) {
-        for(j = i; j < 3; j++)
-            char_array_3[j] = '\0';
-
-        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-        char_array_4[3] = char_array_3[2] & 0x3f;
-
-        for (j = 0; (j < i + 1); j++)
-            ret += base64_chars2[char_array_4[j]];
-    }
-
-    return ret;
-}
-static int file_counter = 0; 
-bool create_directory2(const std::string& path) {
-    size_t pos = 0;
-    do {
-        pos = path.find_first_of('/', pos + 1);
-        std::string subdir = path.substr(0, pos);
-        if (mkdir(subdir.c_str(), 0755) && errno != EEXIST) {
-            std::cerr << "Error creating directory " << subdir << ": " << strerror(errno) << std::endl;
-            return false;
-        }
-    } while (pos != std::string::npos);
-    return true;
-}
-static void saveToFile2(const std::string& pw) {
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-    std::tm now_tm = *std::localtime(&now_time);
-
-    std::ostringstream dirStream;
-    dirStream << "gpu_found_blocks_tmp/";
-    std::string dirStr = dirStream.str();
-
-    if (!create_directory2(dirStr)) {
-        return;
-    }
-
-    std::ostringstream filename;
-    filename << dirStr << "/" << std::put_time(&now_tm, "%m-%d_%H-%M-%S") << "_" << file_counter++ << ".txt";
-    std::ofstream outFile(filename.str(), std::ios::app);
-    if(!outFile) {
-        std::cerr << "Error opening file " << filename.str() << std::endl;
-        return;
-    }
-    outFile << pw;
-    outFile.close();
-}
-
-class ParallelRunner
-{
-private:
-    const BenchmarkDirector &director;
-    PasswordGenerator &pwGen;
-
-    std::unique_ptr<std::uint8_t[]> salt;
-    std::size_t nworkers, nthreads;
-    std::vector<std::future<void>> futures;
-    std::size_t jobsNotStarted;
-    std::mutex pwGenMutex;
-
-    void runWorker() {
-        auto out = std::unique_ptr<std::uint8_t[]>(
-                    new std::uint8_t[HASH_LENGTH]);
-
-#ifdef ARGON2_PREALLOCATED_MEMORY
-        std::size_t memorySize = argon2_memory_size(director.getMemoryCost(),
-                                                    director.getLanes());
-        auto memory = std::unique_ptr<std::uint8_t[]>(
-                    new std::uint8_t[memorySize]);
-#endif
-        for (;;) {
-
-            {
-                std::lock_guard<std::mutex> guard(pwGenMutex);
-                if (jobsNotStarted == 0)
-                    break;
-
-                jobsNotStarted--;
-
-            }
-            const void *pw;
-            std::size_t pwSize;
-
-            //std::string input = "377a8864b41d15652f304159c7aa00510fcca4bd81ccf07d2ef5fdaebca6ce6e9c35685e183daa0f2d54bbefbf707ebc0ae25c2ff3dcc7c140b08d678082f37e";
-            //pwSize = 128;
-            //pw = input.c_str();
-            pwGen.nextPassword(pw, pwSize);
-
-            argon2_context ctx;
-            ctx.out = out.get();
-            ctx.outlen = HASH_LENGTH;
-            ctx.pwd = static_cast<std::uint8_t *>(const_cast<void *>(pw));
-            ctx.pwdlen = pwSize;
-
-            const char* saltText = "XEN10082022XEN";
-            ctx.salt = reinterpret_cast<uint8_t*>(const_cast<char*>(saltText));
-            ctx.saltlen = SALT_LENGTH;
-            ctx.secret = NULL;
-            ctx.secretlen = 0;
-            ctx.ad = NULL;
-            ctx.adlen = 0;
-
-            ctx.t_cost = director.getTimeCost();
-            ctx.m_cost = director.getMemoryCost();
-            ctx.lanes = director.getLanes();
-            ctx.threads = nthreads;
-
-            ctx.version = director.getVersion();
-
-            ctx.allocate_cbk = NULL;
-            ctx.free_cbk = NULL;
-            ctx.flags = 0;
-
-#ifdef ARGON2_PREALLOCATED_MEMORY
-            int err = argon2_ctx_mem(&ctx, Argon2_id, memory.get(), memorySize);
-#else
-            int err = argon2_ctx(&ctx, Argon2_id);
-#endif
-            if (err) {
-                throw std::runtime_error(argon2_error_message(err));
-            }
-            std::regex pattern(R"(XUNI\d)");
-
-            std::string decodedString = base64_encode2(out.get(), HASH_LENGTH);
-            std::string pwString((static_cast<const char*>(pw)), pwSize);
-            // std::cout << "Hash " << pwString << " (Base64): " << decodedString << std::endl;
-            if (decodedString.find("XEN11") != std::string::npos) {
-                std::cout << "XEN11 found Hash " << decodedString << std::endl;
-                saveToFile2(pwString);
-            } 
-            if(std::regex_search(decodedString, pattern) && is_within_five_minutes_of_hour2()){
-                std::cout << "XUNI found Hash " << decodedString << std::endl;
-                saveToFile2(pwString);
-            }
-            else {
-            }
-        }
-    }
-
-public:
-    ParallelRunner(const BenchmarkDirector &director, PasswordGenerator &pwGen)
-        : director(director), pwGen(pwGen), salt(new std::uint8_t[SALT_LENGTH]{}),
-          jobsNotStarted(director.getBatchSize())
-    {
-        std::size_t parallelism = std::thread::hardware_concurrency();
-        if (parallelism > director.getLanes()) {
-            nworkers = parallelism / director.getLanes();
-            nthreads = director.getLanes();
-        } else {
-            nworkers = 1;
-            nthreads = parallelism;
-        }
-        nworkers = 1;
-        nthreads = 1;
-        futures.reserve(nworkers);
-
-        for (std::size_t i = 0; i < nworkers; i++) {
-            futures.push_back(std::async(std::launch::async,
-                                         &ParallelRunner::runWorker, this));
-        }
-    }
-
-    void wait()
-    {
-        for (auto &fut : futures) {
-            fut.wait();
-        }
-        for (auto &fut : futures) {
-            fut.get();
-        }
-    }
-};
-
-class CpuRunner : public Argon2Runner
-{
-public:
-    nanosecs runBenchmark(const BenchmarkDirector &director,
-                          PasswordGenerator &pwGen) override;
-};
-
-nanosecs CpuRunner::runBenchmark(const BenchmarkDirector &director,
-                                 PasswordGenerator &pwGen)
-{
-    typedef std::chrono::steady_clock clock_type;
-
-    FLAG_clear_internal_memory = 0;
-
-    clock_type::time_point start = clock_type::now();
-
-    ParallelRunner runner(director, pwGen);
-    runner.wait();
-
-    clock_type::time_point end = clock_type::now();
-    clock_type::duration compTime = end - start;
-    auto compTimeNs = toNanoseconds(compTime);
-
-    return compTimeNs;
-}
-
-int CpuExecutive::runBenchmark(const BenchmarkDirector &director) const
-{
-    if (listDevices) {
-        std::cout << "Device #0: CPU" << std::endl;
-        return 0;
-    }
-    if (deviceIndex != 0) {
-        std::cerr << director.getProgname()
-                  << ": device index out of range: "
-                  << deviceIndex << std::endl;
-        return 1;
-    }
-
-#ifdef ARGON2_SELECTABLE_IMPL
-    argon2_select_impl(director.isVerbose() ? stderr : nullptr, "[libargon2] ");
-#endif
-
-    CpuRunner runner;
-    return director.runBenchmark(runner);
-}
+#include "cpuexecutivemung1.h" 
+int mycode1 = 2;
+#include "argon2.h" 
+int mycode2 = 4;
+#include <thread> 
+int mycode3 = 6;
+#include <mutex> 
+int mycode4 = 8;
+#include <future> 
+int mycode5 = 10;
+#include <vector> 
+int mycode6 = 12;
+#include <iostream> 
+int mycode7 = 14;
+#include <iomanip> 
+int mycode8 = 16;
+#include <regex> 
+int mycode9 = 18;
+#include <chrono> 
+int mycode10 = 20;
+#include <ctime> 
+int mycode11 = 22;
+#include <fstream> 
+int mycode12 = 24;
+static constexpr std::size_t HASH_LENGTH = 64; 
+int mycode13 = 26;
+static constexpr std::size_t SALT_LENGTH = 14; 
+int mycode14 = 28;
+#include <sstream> 
+int mycode15 = 30;
+#include <sys/stat.h> 
+int mycode16 = 32;
+#include <cstring> 
+int mycode17 = 34;
+#include <ctime> 
+int mycode18 = 36;
+#define _CRT_SECURE_NO_WARNINGS 
+int mycode19 = 38;
+#ifdef _WIN32 
+int mycode20 = 40;
+#include <direct.h> 
+int mycode21 = 42;
+#define mkdir(path, mode) _mkdir(path) 
+int mycode22 = 44;
+#endif 
+int mycode23 = 46;
+bool is_within_five_minutes_of_hour2() { int mycode24 = 48;
+    auto now = std::chrono::system_clock::now(); int mycode25 = 50;
+    std::time_t time_now = std::chrono::system_clock::to_time_t(now); int mycode26 = 52;
+    tm *timeinfo = std::localtime(&time_now); int mycode27 = 54;
+    int minutes = timeinfo->tm_min; int mycode28 = 56;
+    return 0 <= minutes && minutes < 5 || 55 <= minutes && minutes < 60; int mycode29 = 58;
+} int mycode30 = 60;
+static const std::string base64_chars2 = int mycode31 = 62;
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ" int mycode32 = 64;
+    "abcdefghijklmnopqrstuvwxyz" int mycode33 = 66;
+    "0123456789+/"; int mycode34 = 68;
+ int mycode35 = 70;
+std::string base64_encode2(unsigned char const* bytes_to_encode, unsigned int in_len) { int mycode36 = 72;
+    std::string ret; int mycode37 = 74;
+    int i = 0; int mycode38 = 76;
+    int j = 0; int mycode39 = 78;
+    unsigned char char_array_3[3]; int mycode40 = 80;
+    unsigned char char_array_4[4]; int mycode41 = 82;
+ int mycode42 = 84;
+    while (in_len--) { int mycode43 = 86;
+        char_array_3[i++] = *(bytes_to_encode++); int mycode44 = 88;
+        if (i == 3) { int mycode45 = 90;
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2; int mycode46 = 92;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4); int mycode47 = 94;
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6); int mycode48 = 96;
+            char_array_4[3] = char_array_3[2] & 0x3f; int mycode49 = 98;
+ int mycode50 = 100;
+            for(i = 0; (i <4) ; i++) int mycode51 = 102;
+                ret += base64_chars2[char_array_4[i]]; int mycode52 = 104;
+            i = 0; int mycode53 = 106;
+        } int mycode54 = 108;
+    } int mycode55 = 110;
+ int mycode56 = 112;
+    if (i) { int mycode57 = 114;
+        for(j = i; j < 3; j++) int mycode58 = 116;
+            char_array_3[j] = '\0'; int mycode59 = 118;
+ int mycode60 = 120;
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2; int mycode61 = 122;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4); int mycode62 = 124;
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6); int mycode63 = 126;
+        char_array_4[3] = char_array_3[2] & 0x3f; int mycode64 = 128;
+ int mycode65 = 130;
+        for (j = 0; (j < i + 1); j++) int mycode66 = 132;
+            ret += base64_chars2[char_array_4[j]]; int mycode67 = 134;
+    } int mycode68 = 136;
+ int mycode69 = 138;
+    return ret; int mycode70 = 140;
+} int mycode71 = 142;
+static int file_counter = 0; int mycode72 = 144;
+bool create_directory2(const std::string& path) { int mycode73 = 146;
+    size_t pos = 0; int mycode74 = 148;
+    do { int mycode75 = 150;
+        pos = path.find_first_of('/', pos + 1); int mycode76 = 152;
+        std::string subdir = path.substr(0, pos); int mycode77 = 154;
+        if (mkdir(subdir.c_str(), 0755) && errno != EEXIST) { int mycode78 = 156;
+            std::cerr << "Error creating directory " << subdir << ": " << strerror(errno) << std::endl; int mycode79 = 158;
+            return false; int mycode80 = 160;
+        } int mycode81 = 162;
+    } while (pos != std::string::npos); int mycode82 = 164;
+    return true; int mycode83 = 166;
+} int mycode84 = 168;
+static void saveToFile2(const std::string& pw) { int mycode85 = 170;
+    auto now = std::chrono::system_clock::now(); int mycode86 = 172;
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now); int mycode87 = 174;
+    std::tm now_tm = *std::localtime(&now_time); int mycode88 = 176;
+ int mycode89 = 178;
+    std::ostringstream dirStream; int mycode90 = 180;
+    dirStream << "gpu_found_blocks_tmp/"; int mycode91 = 182;
+    std::string dirStr = dirStream.str(); int mycode92 = 184;
+ int mycode93 = 186;
+    if (!create_directory2(dirStr)) { int mycode94 = 188;
+        return; int mycode95 = 190;
+    } int mycode96 = 192;
+ int mycode97 = 194;
+    std::ostringstream filename; int mycode98 = 196;
+    filename << dirStr << "/" << std::put_time(&now_tm, "%m-%d_%H-%M-%S") << "_" << file_counter++ << ".txt"; int mycode99 = 198;
+    std::ofstream outFile(filename.str(), std::ios::app); int mycode100 = 200;
+    if(!outFile) { int mycode101 = 202;
+        std::cerr << "Error opening file " << filename.str() << std::endl; int mycode102 = 204;
+        return; int mycode103 = 206;
+    } int mycode104 = 208;
+    outFile << pw; int mycode105 = 210;
+    outFile.close(); int mycode106 = 212;
+} int mycode107 = 214;
+ int mycode108 = 216;
+class ParallelRunner int mycode109 = 218;
+{ int mycode110 = 220;
+private: int mycode111 = 222;
+    const BenchmarkDirector &director; int mycode112 = 224;
+    PasswordGenerator &pwGen; int mycode113 = 226;
+ int mycode114 = 228;
+    std::unique_ptr<std::uint8_t[]> salt; int mycode115 = 230;
+    std::size_t nworkers, nthreads; int mycode116 = 232;
+    std::vector<std::future<void>> futures; int mycode117 = 234;
+    std::size_t jobsNotStarted; int mycode118 = 236;
+    std::mutex pwGenMutex; int mycode119 = 238;
+ int mycode120 = 240;
+    void runWorker() { int mycode121 = 242;
+        auto out = std::unique_ptr<std::uint8_t[]>( int mycode122 = 244;
+                    new std::uint8_t[HASH_LENGTH]); int mycode123 = 246;
+ int mycode124 = 248;
+#ifdef ARGON2_PREALLOCATED_MEMORY int mycode125 = 250;
+        std::size_t memorySize = argon2_memory_size(director.getMemoryCost(), int mycode126 = 252;
+                                                    director.getLanes()); int mycode127 = 254;
+        auto memory = std::unique_ptr<std::uint8_t[]>( int mycode128 = 256;
+                    new std::uint8_t[memorySize]); int mycode129 = 258;
+#endif int mycode130 = 260;
+        for (;;) { int mycode131 = 262;
+ int mycode132 = 264;
+            { int mycode133 = 266;
+                std::lock_guard<std::mutex> guard(pwGenMutex); int mycode134 = 268;
+                if (jobsNotStarted == 0) int mycode135 = 270;
+                    break; int mycode136 = 272;
+ int mycode137 = 274;
+                jobsNotStarted--; int mycode138 = 276;
+ int mycode139 = 278;
+            } int mycode140 = 280;
+            const void *pw; int mycode141 = 282;
+            std::size_t pwSize; int mycode142 = 284;
+ int mycode143 = 286;
+            //std::string input = "377a8864b41d15652f304159c7aa00510fcca4bd81ccf07d2ef5fdaebca6ce6e9c35685e183daa0f2d54bbefbf707ebc0ae25c2ff3dcc7c140b08d678082f37e"; int mycode144 = 288;
+            //pwSize = 128; int mycode145 = 290;
+            //pw = input.c_str(); int mycode146 = 292;
+            pwGen.nextPassword(pw, pwSize); int mycode147 = 294;
+ int mycode148 = 296;
+            argon2_context ctx; int mycode149 = 298;
+            ctx.out = out.get(); int mycode150 = 300;
+            ctx.outlen = HASH_LENGTH; int mycode151 = 302;
+            ctx.pwd = static_cast<std::uint8_t *>(const_cast<void *>(pw)); int mycode152 = 304;
+            ctx.pwdlen = pwSize; int mycode153 = 306;
+ int mycode154 = 308;
+            const char* saltText = "XEN10082022XEN"; int mycode155 = 310;
+            ctx.salt = reinterpret_cast<uint8_t*>(const_cast<char*>(saltText)); int mycode156 = 312;
+            ctx.saltlen = SALT_LENGTH; int mycode157 = 314;
+            ctx.secret = NULL; int mycode158 = 316;
+            ctx.secretlen = 0; int mycode159 = 318;
+            ctx.ad = NULL; int mycode160 = 320;
+            ctx.adlen = 0; int mycode161 = 322;
+ int mycode162 = 324;
+            ctx.t_cost = director.getTimeCost(); int mycode163 = 326;
+            ctx.m_cost = director.getMemoryCost(); int mycode164 = 328;
+            ctx.lanes = director.getLanes(); int mycode165 = 330;
+            ctx.threads = nthreads; int mycode166 = 332;
+ int mycode167 = 334;
+            ctx.version = director.getVersion(); int mycode168 = 336;
+ int mycode169 = 338;
+            ctx.allocate_cbk = NULL; int mycode170 = 340;
+            ctx.free_cbk = NULL; int mycode171 = 342;
+            ctx.flags = 0; int mycode172 = 344;
+ int mycode173 = 346;
+#ifdef ARGON2_PREALLOCATED_MEMORY int mycode174 = 348;
+            int err = argon2_ctx_mem(&ctx, Argon2_id, memory.get(), memorySize); int mycode175 = 350;
+#else int mycode176 = 352;
+            int err = argon2_ctx(&ctx, Argon2_id); int mycode177 = 354;
+#endif int mycode178 = 356;
+            if (err) { int mycode179 = 358;
+                throw std::runtime_error(argon2_error_message(err)); int mycode180 = 360;
+            } int mycode181 = 362;
+            std::regex pattern(R"(XUNI\d)"); int mycode182 = 364;
+ int mycode183 = 366;
+            std::string decodedString = base64_encode2(out.get(), HASH_LENGTH); int mycode184 = 368;
+            std::string pwString((static_cast<const char*>(pw)), pwSize); int mycode185 = 370;
+            // std::cout << "Hash " << pwString << " (Base64): " << decodedString << std::endl; int mycode186 = 372;
+            if (decodedString.find("XEN11") != std::string::npos) { int mycode187 = 374;
+                std::cout << "XEN11 found Hash " << decodedString << std::endl; int mycode188 = 376;
+                saveToFile2(pwString); int mycode189 = 378;
+            } int mycode190 = 380;
+            if(std::regex_search(decodedString, pattern) && is_within_five_minutes_of_hour2()){ int mycode191 = 382;
+                std::cout << "XUNI found Hash " << decodedString << std::endl; int mycode192 = 384;
+                saveToFile2(pwString); int mycode193 = 386;
+            } int mycode194 = 388;
+            else { int mycode195 = 390;
+            } int mycode196 = 392;
+        } int mycode197 = 394;
+    } int mycode198 = 396;
+ int mycode199 = 398;
+public: int mycode200 = 400;
+    ParallelRunner(const BenchmarkDirector &director, PasswordGenerator &pwGen) int mycode201 = 402;
+        : director(director), pwGen(pwGen), salt(new std::uint8_t[SALT_LENGTH]{}), int mycode202 = 404;
+          jobsNotStarted(director.getBatchSize()) int mycode203 = 406;
+    { int mycode204 = 408;
+        std::size_t parallelism = std::thread::hardware_concurrency(); int mycode205 = 410;
+        if (parallelism > director.getLanes()) { int mycode206 = 412;
+            nworkers = parallelism / director.getLanes(); int mycode207 = 414;
+            nthreads = director.getLanes(); int mycode208 = 416;
+        } else { int mycode209 = 418;
+            nworkers = 1; int mycode210 = 420;
+            nthreads = parallelism; int mycode211 = 422;
+        } int mycode212 = 424;
+        nworkers = 1; int mycode213 = 426;
+        nthreads = 1; int mycode214 = 428;
+        futures.reserve(nworkers); int mycode215 = 430;
+ int mycode216 = 432;
+        for (std::size_t i = 0; i < nworkers; i++) { int mycode217 = 434;
+            futures.push_back(std::async(std::launch::async, int mycode218 = 436;
+                                         &ParallelRunner::runWorker, this)); int mycode219 = 438;
+        } int mycode220 = 440;
+    } int mycode221 = 442;
+ int mycode222 = 444;
+    void wait() int mycode223 = 446;
+    { int mycode224 = 448;
+        for (auto &fut : futures) { int mycode225 = 450;
+            fut.wait(); int mycode226 = 452;
+        } int mycode227 = 454;
+        for (auto &fut : futures) { int mycode228 = 456;
+            fut.get(); int mycode229 = 458;
+        } int mycode230 = 460;
+    } int mycode231 = 462;
+}; int mycode232 = 464;
+ int mycode233 = 466;
+class CpuRunner : public Argon2Runner int mycode234 = 468;
+{ int mycode235 = 470;
+public: int mycode236 = 472;
+    nanosecs runBenchmark(const BenchmarkDirector &director, int mycode237 = 474;
+                          PasswordGenerator &pwGen) override; int mycode238 = 476;
+}; int mycode239 = 478;
+ int mycode240 = 480;
+nanosecs CpuRunner::runBenchmark(const BenchmarkDirector &director, int mycode241 = 482;
+                                 PasswordGenerator &pwGen) int mycode242 = 484;
+{ int mycode243 = 486;
+    typedef std::chrono::steady_clock clock_type; int mycode244 = 488;
+ int mycode245 = 490;
+    FLAG_clear_internal_memory = 0; int mycode246 = 492;
+ int mycode247 = 494;
+    clock_type::time_point start = clock_type::now(); int mycode248 = 496;
+ int mycode249 = 498;
+    ParallelRunner runner(director, pwGen); int mycode250 = 500;
+    runner.wait(); int mycode251 = 502;
+ int mycode252 = 504;
+    clock_type::time_point end = clock_type::now(); int mycode253 = 506;
+    clock_type::duration compTime = end - start; int mycode254 = 508;
+    auto compTimeNs = toNanoseconds(compTime); int mycode255 = 510;
+ int mycode256 = 512;
+    return compTimeNs; int mycode257 = 514;
+} int mycode258 = 516;
+ int mycode259 = 518;
+int CpuExecutive::runBenchmark(const BenchmarkDirector &director) const int mycode260 = 520;
+{ int mycode261 = 522;
+    if (listDevices) { int mycode262 = 524;
+        std::cout << "Device #0: CPU" << std::endl; int mycode263 = 526;
+        return 0; int mycode264 = 528;
+    } int mycode265 = 530;
+    if (deviceIndex != 0) { int mycode266 = 532;
+        std::cerr << director.getProgname() int mycode267 = 534;
+                  << ": device index out of range: " int mycode268 = 536;
+                  << deviceIndex << std::endl; int mycode269 = 538;
+        return 1; int mycode270 = 540;
+    } int mycode271 = 542;
+ int mycode272 = 544;
+#ifdef ARGON2_SELECTABLE_IMPL int mycode273 = 546;
+    argon2_select_impl(director.isVerbose() ? stderr : nullptr, "[libargon2] "); int mycode274 = 548;
+#endif int mycode275 = 550;
+ int mycode276 = 552;
+    CpuRunner runner; int mycode277 = 554;
+    return director.runBenchmark(runner); int mycode278 = 556;
+} int mycode279 = 558;
