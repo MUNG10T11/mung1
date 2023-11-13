@@ -42,61 +42,61 @@ if(CUDA_FOUND)
     )
 endif()
 
-add_subdirectory(mung1/ext/argon2)
+add_subdirectory(mung1cmake/ext/argon2)
 
 add_library(argon2-gpu-common SHARED
-mung1/lib/argon2-gpu-common/argon2params.cpp
-mung1/lib/argon2-gpu-common/blake2b.cpp
+mung1cmake/lib/argon2-gpu-common/argon2params.cpp
+mung1cmake/lib/argon2-gpu-common/blake2b.cpp
 )
 target_include_directories(argon2-gpu-common INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mung1/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mung1cmake/include>
     $<INSTALL_INTERFACE:include>
 )
 target_include_directories(argon2-gpu-common PRIVATE
-${CMAKE_CURRENT_SOURCE_DIR}/mung1/include/argon2-gpu-common
-${CMAKE_CURRENT_SOURCE_DIR}/mung1/lib/argon2-gpu-common
+${CMAKE_CURRENT_SOURCE_DIR}/mung1cmake/include/argon2-gpu-common
+${CMAKE_CURRENT_SOURCE_DIR}/mung1cmake/lib/argon2-gpu-common
 )
 
 if(CUDA_FOUND)
     cuda_add_library(argon2-cuda SHARED
-    mung1/lib/argon2-cuda/cudaexception.cpp
-    mung1/lib/argon2-cuda/device.cpp
-    mung1/lib/argon2-cuda/globalcontext.cpp
-    mung1/lib/argon2-cuda/programcontext.cpp
-    mung1/lib/argon2-cuda/processingunit.cpp
-    mung1/lib/argon2-cuda/kernelrunner.cu
+    mung1cmake/lib/argon2-cuda/cudaexception.cpp
+    mung1cmake/lib/argon2-cuda/device.cpp
+    mung1cmake/lib/argon2-cuda/globalcontext.cpp
+    mung1cmake/lib/argon2-cuda/programcontext.cpp
+    mung1cmake/lib/argon2-cuda/processingunit.cpp
+    mung1cmake/lib/argon2-cuda/kernelrunner.cu
     )
 else()
     add_library(argon2-cuda SHARED
-    mung1/lib/argon2-cuda/nocuda.cpp
+    mung1cmake/lib/argon2-cuda/nocuda.cpp
     )
 endif()
 
 target_include_directories(argon2-cuda PRIVATE
-mung1/include/argon2-cuda
-mung1/lib/argon2-cuda
+mung1cmake/include/argon2-cuda
+mung1cmake/lib/argon2-cuda
 )
 target_include_directories(argon2-cuda INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mung1/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mung1cmake/include>
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(argon2-cuda argon2-gpu-common)
 
 add_library(argon2-opencl SHARED
-mung1/lib/argon2-opencl/device.cpp
-mung1/lib/argon2-opencl/globalcontext.cpp
-mung1/lib/argon2-opencl/kernelloader.cpp
-mung1/lib/argon2-opencl/programcontext.cpp
-mung1/lib/argon2-opencl/processingunit.cpp
-mung1/lib/argon2-opencl/kernelrunner.cpp
+mung1cmake/lib/argon2-opencl/device.cpp
+mung1cmake/lib/argon2-opencl/globalcontext.cpp
+mung1cmake/lib/argon2-opencl/kernelloader.cpp
+mung1cmake/lib/argon2-opencl/programcontext.cpp
+mung1cmake/lib/argon2-opencl/processingunit.cpp
+mung1cmake/lib/argon2-opencl/kernelrunner.cpp
 )
 target_include_directories(argon2-opencl INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mung1/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mung1cmake/include>
     $<INSTALL_INTERFACE:include>
 )
 target_include_directories(argon2-opencl PRIVATE
-mung1/include/argon2-opencl
-mung1/lib/argon2-opencl
+mung1cmake/include/argon2-opencl
+mung1cmake/lib/argon2-opencl
 )
 
 if (UNIX AND NOT APPLE)
@@ -116,13 +116,13 @@ if (WIN32)
 endif()
 
 add_executable(mung1thuhai
-mung1/src/argon2-gpu-bench/cpuexecutive.cpp
-mung1/src/argon2-gpu-bench/cudaexecutive.cpp
-mung1/src/argon2-gpu-bench/openclexecutive.cpp
-mung1/src/argon2-gpu-bench/benchmark.cpp
-mung1/src/argon2-gpu-bench/main.cpp
+mung1cmake/src/argon2-gpu-bench/cpuexecutive.cpp
+mung1cmake/src/argon2-gpu-bench/cudaexecutive.cpp
+mung1cmake/src/argon2-gpu-bench/openclexecutive.cpp
+mung1cmake/src/argon2-gpu-bench/benchmark.cpp
+mung1cmake/src/argon2-gpu-bench/main.cpp
 )
-target_include_directories(mung1thuhai PRIVATE mung1/src/argon2-gpu-bench)
+target_include_directories(mung1thuhai PRIVATE mung1cmake/src/argon2-gpu-bench)
 target_link_libraries(mung1thuhai
     argon2-cuda argon2-opencl argon2 -lOpenCL
 )
@@ -132,21 +132,21 @@ install(
     DESTINATION ${LIBRARY_INSTALL_DIR}
 )
 install(FILES
-mung1/include/argon2-gpu-common/argon2-common.h
-mung1/include/argon2-gpu-common/argon2params.h
-mung1/include/argon2-opencl/cl.hpp
-mung1/include/argon2-opencl/opencl.h
-mung1/include/argon2-opencl/device.h
-mung1/include/argon2-opencl/globalcontext.h
-mung1/include/argon2-opencl/programcontext.h
-mung1/include/argon2-opencl/processingunit.h
-mung1/include/argon2-opencl/kernelrunner.h
-mung1/include/argon2-cuda/cudaexception.h
-mung1/include/argon2-cuda/kernelrunner.h
-mung1/include/argon2-cuda/device.h
-mung1/include/argon2-cuda/globalcontext.h
-mung1/include/argon2-cuda/programcontext.h
-mung1/include/argon2-cuda/processingunit.h
+mung1cmake/include/argon2-gpu-common/argon2-common.h
+mung1cmake/include/argon2-gpu-common/argon2params.h
+mung1cmake/include/argon2-opencl/cl.hpp
+mung1cmake/include/argon2-opencl/opencl.h
+mung1cmake/include/argon2-opencl/device.h
+mung1cmake/include/argon2-opencl/globalcontext.h
+mung1cmake/include/argon2-opencl/programcontext.h
+mung1cmake/include/argon2-opencl/processingunit.h
+mung1cmake/include/argon2-opencl/kernelrunner.h
+mung1cmake/include/argon2-cuda/cudaexception.h
+mung1cmake/include/argon2-cuda/kernelrunner.h
+mung1cmake/include/argon2-cuda/device.h
+mung1cmake/include/argon2-cuda/globalcontext.h
+mung1cmake/include/argon2-cuda/programcontext.h
+mung1cmake/include/argon2-cuda/processingunit.h
     DESTINATION ${INCLUDE_INSTALL_DIR}
 )
 install(
